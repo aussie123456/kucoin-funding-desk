@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Desk</title>
+<style>
+:root{--page:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--grid:#e1e0d9;--axis:#c3c2b7;
+--s1:#2a78d6;--s2:#eb6834;--good:#006300;--bad:#b3261e;--chip:#efeee9;--sel:#e9f1fb;--mid:#f0efec;--cool:#2a78d6;--warm:#d64a3a}
+@media (prefers-color-scheme:dark){:root{--page:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;
+--s1:#3987e5;--s2:#d95926;--good:#0ca30c;--bad:#e66767;--chip:#262624;--sel:#16263a;--mid:#383835;--cool:#3987e5;--warm:#e0604f}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1360px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:22px;margin:0 0 2px;letter-spacing:-.01em}
+h2{font-size:15px;margin:0 0 4px}
+.sub{color:var(--ink2);margin:0 0 14px;max-width:860px}
+.top{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.meta{color:var(--muted);font-size:12px;text-align:right}
+a{color:var(--s1)}
+.btn{font:inherit;border:1px solid var(--axis);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-block}
+.card{background:var(--surface);border:1px solid var(--grid);border-radius:12px;padding:14px;margin-bottom:12px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.tile .n{font-size:22px;font-weight:650;line-height:1.2}
+.tile .l{color:var(--ink2);font-size:12px}
+.tile .d{font-size:12px;margin-top:2px;color:var(--muted)}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 10px;align-items:center}
+select,input[type=search],input[type=number],input[type=text]{font:inherit;padding:6px 8px;border:1px solid var(--axis);border-radius:8px;background:var(--surface);color:var(--ink)}
+input[type=number]{width:110px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:6px 7px;border-bottom:1px solid var(--grid);text-align:right;white-space:nowrap}
+th{font-size:12px;color:var(--ink2);font-weight:600;background:var(--surface);vertical-align:bottom}
+th[data-k]{cursor:pointer;user-select:none}
+th.l,td.l{text-align:left}
+tr.row{cursor:pointer}
+tr.row:hover,tr.row.open{background:var(--sel)}
+.chip{display:inline-block;background:var(--chip);border-radius:999px;padding:1px 8px;font-size:11px;color:var(--ink);margin-right:3px}
+.chip.w{border:1px solid var(--s2)}
+.pos{color:var(--good)}.neg{color:var(--bad)}
+.small{color:var(--muted);font-size:12px}
+.note{color:var(--ink2);font-size:13px;max-width:900px;margin:0 0 6px}
+.stale{border-left:3px solid var(--s2);padding:4px 0 4px 10px;margin:6px 0;color:var(--ink2);font-size:13px}
+.detail td{white-space:normal;text-align:left;background:var(--page);padding:12px 14px}
+.detail table{width:auto}
+.hm td,.hm th{text-align:center;padding:5px 6px;border:2px solid var(--surface);font-size:12px}
+.hm th{font-weight:600}
+.legend{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--ink2);margin-top:8px}
+.ramp{width:160px;height:10px;border-radius:5px;background:linear-gradient(90deg,var(--warm),var(--mid),var(--cool))}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+@media (max-width:1000px){.grid2{grid-template-columns:1fr}}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:4px 18px;font-size:13px;margin-top:10px}
+.kv div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--grid);padding:2px 0}
+.kv span:first-child{color:var(--ink2)}
+details summary{cursor:pointer;color:var(--ink2)}
+.foot{color:var(--muted);font-size:12px;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><h1 id="name"></h1><p class="sub" id="sub"></p></div>
+    <div class="meta"><div id="gen"></div><a class="btn" id="refresh" style="display:none;margin-top:6px" target="_blank" rel="noopener">Refresh data</a></div>
+  </div>
+  <div class="tiles" id="tiles"></div>
+
+  <div class="card" id="ltcard" style="display:none">
+    <h2>Leveraged tokens: distance to a forced rebalance</h2>
+    <p class="note">Gate resets a token to its target leverage the moment real leverage reaches a limit, and checks every token daily at 16:00 UTC (00:00 UTC+8), when it resets any whose underlying has moved more than 1%. "Reset trade" is what the fund would buy (+) or sell (&minus;) in the underlying if reset now, as a share of its net asset value. Click a row for the price levels.</p>
+    <div class="stale" id="ltstale" style="display:none"></div>
+    <div class="filters">
+      <input type="search" id="lq" placeholder="Search token" aria-label="Search token">
+      <select id="lty" aria-label="Type"><option value="">All types</option><option>3L</option><option>3S</option><option>5L</option><option>5S</option></select>
+      <label class="small">Min 24h volume, $ <input type="number" id="lmin" min="0" step="10000"></label>
+      <label class="small"><input type="checkbox" id="lkc"> Has a KuCoin perpetual</label>
+      <label class="small">Leverage levels for the detail view <input type="text" id="llev" size="14"></label>
+      <span class="small" id="lcnt"></span>
+    </div>
+    <div class="tw"><table id="ltb"><thead></thead><tbody></tbody></table></div>
+    <div style="margin-top:8px"><button class="btn" id="lmore" type="button" style="display:none"></button></div>
+  </div>
+
+  <div class="card" id="fcard" style="display:none">
+    <h2>KuCoin perpetuals: funding, volatility and depth</h2>
+    <p class="note">The most-traded USDT-margined perpetuals by 24-hour turnover. Funding is what longs pay shorts; annualised figures are simple, not compounded. Volatility comes from the last 200 hourly candles. Depth is the resting order value within the stated distance of mid, averaged across bids and asks.</p>
+    <div class="stale" id="fstale" style="display:none"></div>
+    <div class="filters"><input type="search" id="fq" placeholder="Search contract" aria-label="Search contract"><span class="small" id="fcnt"></span></div>
+    <div class="tw"><table id="ftb"><thead></thead><tbody></tbody></table></div>
+  </div>
+
+  <div class="grid2" id="risk" style="display:none">
+    <div class="card">
+      <h2>Correlation of hourly returns</h2>
+      <div class="small">Twelve most-traded contracts, last 200 hours. Hover a cell for the pair.</div>
+      <div class="tw" style="margin-top:8px"><table class="hm" id="hm"></table></div>
+      <div class="legend"><span>&minus;1 move opposite</span><i class="ramp"></i><span>+1 move together</span></div>
+    </div>
+    <div class="card">
+      <h2>What-if book: overnight risk and funding</h2>
+      <div class="small">Enter a notional per contract in US dollars: positive for long, negative for short. Nothing is sent anywhere; the figures are saved in this browser only.</div>
+      <div class="tw" style="margin-top:8px"><table id="wb"><thead></thead><tbody></tbody></table></div>
+      <div class="kv" id="wout"></div>
+      <div style="margin-top:8px"><button class="btn" id="wclr" type="button">Clear</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <details><summary>How the numbers are worked out</summary>
+      <div class="note" style="margin-top:8px" id="method"></div>
+    </details>
+    <details style="margin-top:6px"><summary>Build log</summary><pre class="small" id="log" style="white-space:pre-wrap"></pre></details>
+  </div>
+  <div class="foot">Public market data only. No account, key or order is involved. Not investment advice.</div>
+</div>
+<script type="application/json" id="d-data"></script>
+<script>
+(function(){
+var D=JSON.parse(document.getElementById('d-data').textContent||'{}');
+var $=function(id){return document.getElementById(id)};
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function num(v,d){return v==null?'<span class="small">n/a</span>':Number(v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d})}
+function pct(v,d,sign){if(v==null)return '<span class="small">n/a</span>';var s=(sign&&v>0?'+':'')+num(v,d)+'%';return sign?'<span class="'+(v>0?'pos':v<0?'neg':'')+'">'+s+'</span>':s}
+function usd(v){if(v==null)return '<span class="small">n/a</span>';var a=Math.abs(v),s=v<0?'-':'';return s+'$'+(a>=1e9?(a/1e9).toFixed(2)+'bn':a>=1e6?(a/1e6).toFixed(1)+'m':a>=1e3?(a/1e3).toFixed(0)+'k':a.toFixed(0))}
+function px(v){if(v==null)return '<span class="small">n/a</span>';var a=Math.abs(v);return Number(v).toLocaleString('en-US',{maximumSignificantDigits:a>=1000?7:5})}
+function lvl(m,p){return m==null?num(null):(m>0?'+':'')+num(m,1)+'%'+(p==null?'':' <span class="small">at '+px(p)+'</span>')}
+function when(ts){return new Date(ts*1000).toISOString().replace('T',' ').slice(0,16)+' UTC'}
+function store(k,v){try{if(v===undefined){var x=localStorage.getItem(k);return x==null?null:JSON.parse(x)}localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
+
+document.title=D.name||'Desk';$('name').textContent=D.name||'Desk';$('sub').textContent=D.sub||'';
+$('gen').textContent='Updated '+(D.gen||'');
+if(D.refresh_url){$('refresh').href=D.refresh_url;$('refresh').style.display='inline-block'}
+$('log').textContent=(D.log||[]).join('\n');
+
+// generic sortable table
+function table(el,cols,rows,st,onrow){
+  var th=el.querySelector('thead'),tb=el.querySelector('tbody');
+  th.innerHTML='<tr>'+cols.map(function(c){return '<th'+(c.l?' class="l"':'')+(c.v?' data-k="'+c.k+'"':'')+(c.tip?' title="'+esc(c.tip)+'"':'')+'>'+c.h+(st.k===c.k?(st.dir>0?' &#9650;':' &#9660;'):'')+'</th>'}).join('')+'</tr>';
+  var col=cols.filter(function(c){return c.k===st.k})[0];
+  if(col&&col.v)rows=rows.slice().sort(function(a,b){var x=col.v(a),y=col.v(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;return (x<y?-1:x>y?1:0)*st.dir});
+  tb.innerHTML=rows.map(function(r,i){return '<tr class="'+(onrow?'row':'')+'" data-i="'+i+'">'+cols.map(function(c){return '<td'+(c.l?' class="l"':'')+'>'+c.f(r)+'</td>'}).join('')+'</tr>'}).join('');
+  Array.prototype.forEach.call(th.querySelectorAll('th[data-k]'),function(h){h.onclick=function(){var k=h.getAttribute('data-k');if(st.k===k)st.dir=-st.dir;else{st.k=k;var c=cols.filter(function(c){return c.k===k})[0];st.dir=c.desc?-1:1}st.redraw()}});
+  if(onrow)Array.prototype.forEach.call(tb.querySelectorAll('tr.row'),function(tr){tr.onclick=function(){onrow(tr,rows[+tr.getAttribute('data-i')],cols.length)}});
+}
+
+var tiles=[];
+// ---------- leveraged tokens ----------
+if(D.lt&&D.lt.rows&&D.lt.rows.length){
+  $('ltcard').style.display='';
+  var L=D.lt.rows,LIM=D.lt.lim||{};
+  if(D.lt.stale){$('ltstale').style.display='';$('ltstale').textContent='Gate could not be reached on this run. Showing leveraged-token data from '+when(D.lt.ts)+'.'}
+  var saved=store('ltd-filters')||{};
+  $('lmin').value=saved.min!=null?saved.min:10000;$('llev').value=saved.lev||'2.5, 3.4, 3.5';$('lty').value=saved.ty||'';$('lkc').checked=!!saved.kc;
+  var lst={k:'near',dir:1,all:false};
+  function g(r,x){return r.sd==='L'?x/(x-1):x/(x+1)}
+  function moveTo(r,to){if(r.sd==='L'&&(r.lev<=1||to<=1))return null;return g(r,to)/g(r,r.lev)-1}
+  var lcols=[
+    {k:'t',h:'Token',l:1,v:function(r){return r.t},f:function(r){return '<b>'+esc(r.t)+'</b>'}},
+    {k:'T',h:'Target',v:function(r){return r.T*(r.sd==='L'?1:-1)},f:function(r){return (r.sd==='L'?'':'&minus;')+r.T+'x'}},
+    {k:'lev',h:'Leverage<br>now',desc:1,v:function(r){return r.lev},f:function(r){return num(r.lev,2)+'x'},tip:'Real leverage published by Gate'},
+    {k:'since',h:'Underlying since<br>last at target',v:function(r){return r.since},f:function(r){return pct(r.since,1,1)},tip:'Move in the underlying implied by the drift in leverage away from target'},
+    {k:'near',h:'Nearest forced<br>rebalance',v:function(r){return r.near},f:function(r){return r.near==null?num(null):num(r.near,1)+'% away'},tip:'Smallest move in the underlying, in either direction, that takes leverage to a limit'},
+    {k:'mu',h:'To upper limit<br>(leverage too high)',v:function(r){return r.mu==null?null:Math.abs(r.mu)},f:function(r){return lvl(r.mu,r.pu)}},
+    {k:'ml',h:'To lower limit<br>(leverage too low)',v:function(r){return r.ml==null?null:Math.abs(r.ml)},f:function(r){return lvl(r.ml,r.pl)}},
+    {k:'rb',h:'Reset trade,<br>% of NAV',desc:1,v:function(r){return Math.abs(r.rb)},f:function(r){return (r.rb>0?'Buy ':r.rb<0?'Sell ':'')+num(Math.abs(r.rb),1)+'%'},tip:'Underlying bought or sold if the token were reset to target now, as a share of fund net asset value'},
+    {k:'uchg',h:'Underlying<br>24h',desc:1,v:function(r){return r.uchg==null?null:Math.abs(r.uchg)},f:function(r){return pct(r.uchg,1,1)}},
+    {k:'prem',h:'Price vs<br>NAV',desc:1,v:function(r){return r.prem==null?null:Math.abs(r.prem)},f:function(r){return pct(r.prem,2,1)}},
+    {k:'vol',h:'24h<br>volume',desc:1,v:function(r){return r.vol},f:function(r){return usd(r.vol)}},
+    {k:'fl',h:'Flags',l:1,f:function(r){return (r.out?'<span class="chip w">At limit</span>':'')+(r.due?'<span class="chip">Due at 16:00 UTC</span>':'')+(r.kc?'<span class="chip">'+esc(r.kc)+'</span>':'')}}
+  ];
+  function ldetail(tr,r,n){
+    var nx=tr.nextElementSibling;if(nx&&nx.classList.contains('detail')){nx.remove();tr.classList.remove('open');return}
+    var lv=$('llev').value.split(/[,\s]+/).map(Number).filter(function(x){return x>0});
+    var lim=LIM[r.T+r.sd]||[];
+    var rows=lv.map(function(x){return [x+'x',moveTo(r,x)]}).concat(lim.length?[['Lower limit '+lim[0]+'x',moveTo(r,lim[0])],['Target '+r.T+'x',moveTo(r,r.T)],['Upper limit '+lim[1]+'x',moveTo(r,lim[1])]]:[]);
+    var h='<b>'+esc(r.t)+'</b> <span class="small">'+(r.sd==='L'?'long':'short')+' '+esc(r.u)+', target '+r.T+'x, now '+num(r.lev,3)+'x. Underlying '+px(r.upx)+'. Token '+px(r.px)+', net asset value '+px(r.nav)+'. Last reset reported by Gate: '+(r.pts?when(r.pts):'n/a')+'.</span>'+
+      '<table style="margin-top:8px"><thead><tr><th class="l">Leverage reaches</th><th>Underlying move</th><th>Underlying price</th></tr></thead><tbody>'+
+      rows.map(function(x){return '<tr><td class="l">'+esc(x[0])+'</td><td>'+(x[1]==null?num(null):pct(x[1]*100,2,1))+'</td><td>'+(x[1]==null||r.upx==null?num(null):px(r.upx*(1+x[1])))+'</td></tr>'}).join('')+'</tbody></table>';
+    var d=document.createElement('tr');d.className='detail';d.innerHTML='<td colspan="'+n+'">'+h+'</td>';tr.after(d);tr.classList.add('open');
+  }
+  lst.redraw=function(){
+    var q=$('lq').value.trim().toUpperCase(),ty=$('lty').value,mn=+$('lmin').value||0,kc=$('lkc').checked;
+    store('ltd-filters',{min:mn,lev:$('llev').value,ty:ty,kc:kc});
+    var rows=L.filter(function(r){return (!q||r.t.indexOf(q)>=0)&&(!ty||r.T+r.sd===ty)&&r.vol>=mn&&(!kc||r.kc)});
+    var tot=rows.length,shown=lst.all?rows:null;
+    var col=lcols.filter(function(c){return c.k===lst.k})[0];
+    if(!lst.all){rows=rows.slice().sort(function(a,b){var x=col.v(a),y=col.v(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;return (x<y?-1:x>y?1:0)*lst.dir}).slice(0,100)}
+    table($('ltb'),lcols,rows,lst,ldetail);
+    $('lcnt').textContent=(lst.all||tot<=100?tot:'100 of '+tot)+' tokens';
+    $('lmore').style.display=tot>100?'':'none';$('lmore').textContent=lst.all?'Show first 100':'Show all '+tot;
+  };
+  ['lq','lty','lmin','lkc','llev'].forEach(function(id){$(id).oninput=lst.redraw;$(id).onchange=lst.redraw});
+  $('lmore').onclick=function(){lst.all=!lst.all;lst.redraw()};
+  lst.redraw();
+  var liq=L.filter(function(r){return r.vol>=10000}),n3=liq.filter(function(r){return r.near!=null&&r.near<=3}).length,due=liq.filter(function(r){return r.due}).length;
+  var wide=liq.slice().sort(function(a,b){return Math.abs(b.rb)-Math.abs(a.rb)})[0];
+  tiles.push(['Leveraged tokens tracked',L.length,liq.length+' with over $10k traded in 24h']);
+  tiles.push(['Within 3% of a forced rebalance',n3,'of the '+liq.length+' actively traded']);
+  tiles.push(['Due at the next daily check',due,'underlying has moved more than 1% in 24h']);
+  if(wide)tiles.push(['Largest drift from target',esc(wide.t)+' '+num(wide.lev,2)+'x','target '+wide.T+'x, reset trade '+(wide.rb>0?'buy ':'sell ')+num(Math.abs(wide.rb),0)+'% of NAV']);
+}
+
+// ---------- futures ----------
+if(D.fut&&D.fut.rows&&D.fut.rows.length){
+  $('fcard').style.display='';
+  var F=D.fut.rows;
+  if(D.fut.stale){$('fstale').style.display='';$('fstale').textContent='KuCoin could not be reached on this run. Showing futures data from '+when(D.fut.ts)+'.'}
+  var fst={k:'turn',dir:-1};
+  var fcols=[
+    {k:'s',h:'Contract',l:1,v:function(r){return r.s},f:function(r){return '<b>'+esc(r.b)+'</b> <span class="small">'+esc(r.s)+'</span>'}},
+    {k:'px',h:'Price',f:function(r){return px(r.px)}},
+    {k:'chg',h:'24h',desc:1,v:function(r){return r.chg},f:function(r){return pct(r.chg,1,1)}},
+    {k:'turn',h:'24h<br>turnover',desc:1,v:function(r){return r.turn},f:function(r){return usd(r.turn)}},
+    {k:'oi',h:'Open<br>interest',desc:1,v:function(r){return r.oi},f:function(r){return usd(r.oi)}},
+    {k:'fa',h:'Funding now,<br>a year',desc:1,v:function(r){return r.fa},f:function(r){return pct(r.fa,1,1)+' <span class="small">'+(r.f==null?'':num(r.f,4)+'% / '+r.ih+'h')+'</span>'},tip:'Current funding rate for the period in progress, annualised'},
+    {k:'f7a',h:'7-day,<br>a year',desc:1,v:function(r){return r.f7a},f:function(r){return pct(r.f7a,1,1)}},
+    {k:'f30a',h:'30-day,<br>a year',desc:1,v:function(r){return r.f30a},f:function(r){return pct(r.f30a,1,1)}},
+    {k:'f30',h:'30-day<br>total',desc:1,v:function(r){return r.f30},f:function(r){return pct(r.f30,2,1)},tip:'Sum of funding settlements over the last 30 days (or since listing if shorter)'},
+    {k:'fpos',h:'Settlements<br>positive',desc:1,v:function(r){return r.fpos},f:function(r){return pct(r.fpos,0,0)}},
+    {k:'sd',h:'Daily<br>std dev',desc:1,v:function(r){return r.sd},f:function(r){return pct(r.sd,2,0)}},
+    {k:'s8',h:'8-hour<br>std dev',desc:1,v:function(r){return r.s8},f:function(r){return pct(r.s8,2,0)},tip:'Daily standard deviation divided by the square root of 3'},
+    {k:'vol',h:'Volatility,<br>a year',desc:1,v:function(r){return r.vol},f:function(r){return pct(r.vol,0,0)}},
+    {k:'cr',h:'Funding<br>per risk',desc:1,v:function(r){return r.cr},f:function(r){return num(r.cr,2)},tip:'30 days of funding divided by one daily standard deviation'},
+    {k:'spr',h:'Spread,<br>bps',v:function(r){return r.spr},f:function(r){return num(r.spr,2)}},
+    {k:'d15',h:'Depth<br>0.15%',desc:1,v:function(r){return r.d15},f:function(r){return usd(r.d15)}},
+    {k:'d50',h:'Depth<br>0.5%',desc:1,v:function(r){return r.d50},f:function(r){return usd(r.d50)}}
+  ];
+  fst.redraw=function(){var q=$('fq').value.trim().toUpperCase();var rows=F.filter(function(r){return !q||r.s.indexOf(q)>=0||r.b.indexOf(q)>=0});table($('ftb'),fcols,rows,fst);$('fcnt').textContent=rows.length+' contracts'};
+  $('fq').oninput=fst.redraw;fst.redraw();
+  var wf=F.filter(function(r){return r.f30a!=null}),hi=wf.slice().sort(function(a,b){return b.f30a-a.f30a})[0],lo=wf.slice().sort(function(a,b){return a.f30a-b.f30a})[0];
+  var btc=F.filter(function(r){return r.b==='BTC'})[0];
+  if(btc&&btc.f30a!=null)tiles.push(['BTC funding, 30-day',num(btc.f30a,1)+'% a year','now '+num(btc.fa,1)+'% a year; '+num(btc.sd,2)+'% daily std dev']);
+  if(hi)tiles.push(['Highest 30-day funding',esc(hi.b)+' '+num(hi.f30a,1)+'%','a year, longs paying shorts']);
+  if(lo&&lo!==hi)tiles.push(['Lowest 30-day funding',esc(lo.b)+' '+num(lo.f30a,1)+'%','a year'+(lo.f30a<0?', shorts paying longs':'')]);
+
+  // correlation heat map (diverging, grey midpoint) and what-if book
+  var C=D.fut.corr;
+  if(C&&C.syms&&C.syms.length>1){
+    $('risk').style.display='';
+    var by={};F.forEach(function(r){by[r.s]=r});var lab=C.syms.map(function(s){return by[s]?by[s].b:s});
+    var h='<tr><th></th>'+lab.map(function(x){return '<th>'+esc(x)+'</th>'}).join('')+'</tr>';
+    C.m.forEach(function(row,i){h+='<tr><th style="text-align:right">'+esc(lab[i])+'</th>'+row.map(function(v,j){
+      if(v==null)return '<td class="small">n/a</td>';var a=Math.round(Math.min(1,Math.abs(v))*100);
+      return '<td title="'+esc(lab[i])+' and '+esc(lab[j])+': '+v.toFixed(2)+'" style="background:color-mix(in srgb,var(--'+(v>=0?'cool':'warm')+') '+Math.round(a*.75)+'%,var(--mid))">'+v.toFixed(2)+'</td>'}).join('')+'</tr>'});
+    $('hm').innerHTML=h;
+    var W=store('ltd-book')||{};
+    var wst={k:'',dir:1,redraw:function(){}};
+    var wcols=[{k:'b',h:'Contract',l:1,f:function(s){return '<b>'+esc(by[s].b)+'</b>'}},
+      {k:'n',h:'Notional, $',f:function(s){return '<input type="number" step="1000" data-s="'+s+'" value="'+(W[s]||'')+'">'}},
+      {k:'fa',h:'Funding now, a year',f:function(s){return pct(by[s].fa,1,1)}},
+      {k:'s8',h:'8-hour std dev',f:function(s){return pct(by[s].s8,2,0)}}];
+    table($('wb'),wcols,C.syms,wst);
+    function wcalc(){
+      var n=C.syms.map(function(s){return +W[s]||0}),gross=0,net=0,v=0,fnow=0,f30=0;
+      n.forEach(function(x,i){gross+=Math.abs(x);net+=x;var r=by[C.syms[i]];if(r.f!=null)fnow-=x*r.f/100*24/r.ih;if(r.f30a!=null)f30-=x*r.f30a/100/365});
+      for(var i=0;i<n.length;i++)for(var j=0;j<n.length;j++){var c=C.m[i][j],a=by[C.syms[i]].sh,b=by[C.syms[j]].sh;if(c!=null&&a&&b)v+=n[i]*n[j]*c*a*b}
+      var sd=Math.sqrt(Math.max(v,0)*24),s8=sd/Math.sqrt(3);
+      $('wout').innerHTML=gross?[['Gross exposure',usd(gross)],['Net exposure',usd(net)],['8-hour standard deviation',usd(s8)+' ('+num(s8/gross*100,2)+'% of gross)'],['Daily standard deviation',usd(sd)],
+        ['Funding per day at the current rate',usd(fnow)],['Funding per day at the 30-day average',usd(f30)]].map(function(x){return '<div><span>'+x[0]+'</span><span>'+x[1]+'</span></div>'}).join(''):'';
+    }
+    $('wb').oninput=function(e){var s=e.target.getAttribute('data-s');if(!s)return;W[s]=+e.target.value||0;store('ltd-book',W);wcalc()};
+    $('wclr').onclick=function(){W={};store('ltd-book',W);table($('wb'),wcols,C.syms,wst);wcalc()};
+    wcalc();
+  }
+}
+$('tiles').innerHTML=tiles.map(function(t){return '<div class="card tile"><div class="l">'+t[0]+'</div><div class="n">'+t[1]+'</div><div class="d">'+t[2]+'</div></div>'}).join('');
+
+var m=[];
+if(D.lt)m.push('<b>Leveraged tokens.</b> Gate publishes each token\'s real leverage and net asset value. For a long token, exposure divided by borrowing equals L/(L&minus;1); for a short token, exposure divided by cash equals L/(L+1). Both ratios move one-for-one with the underlying price, so the move that takes leverage from L to any other level L* is [L*/(L*&mp;1)] / [L/(L&mp;1)] &minus; 1. Limits used: 3L 2.25x to 4.125x, 3S 1.5x to 5.25x, 5L and 5S 3.5x to 7x (Gate help centre). The reset trade is (target &minus; leverage now) &times; net asset value, with the sign flipped for short tokens. Gate does not publish fund size through its public API, so trades are shown as a share of net asset value, not in dollars. The underlying price is Gate spot; the tokens track perpetual futures, so levels are approximate.'.replace(/&mp;/g,'&#8723;'));
+if(D.fut)m.push('<b>Perpetuals.</b> Hourly log returns from the last 200 one-hour candles, live candle dropped. Hourly variance is the mean squared return (no mean adjustment); daily standard deviation is hourly &times; &radic;24, 8-hour is daily &divide; &radic;3, annual is daily &times; &radic;365. Funding now annualised = rate &times; 8,760 &divide; interval hours. 7-day and 30-day figures are the sum of settlements over the window, scaled to a year. Funding per risk = 30 days of funding &divide; one daily standard deviation. The what-if book uses the correlation matrix and each contract\'s hourly standard deviation; funding is shown from the position holder\'s side, so a long pays when funding is positive.');
+$('method').innerHTML=m.join('<br><br>');
+})();
+</script>
+</body>
+</html>

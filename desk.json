@@ -1,0 +1,6 @@
+{
+  "name": "KuCoin Funding Desk",
+  "sub": "Funding, volatility, correlation and order-book depth for the most-traded KuCoin USDT perpetuals, with a what-if book for overnight risk and funding income.",
+  "leveraged": false,
+  "futures": true
+}
